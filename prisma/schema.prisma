@@ -1,0 +1,74 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+// prisma/schema.prisma
+
+// ══════════════════════════════════════════════════════════
+// 第一部分：generator（客户端生成配置）
+// ══════════════════════════════════════════════════════════
+// 告诉 Prisma 执行 prisma generate 时生成什么
+
+generator client {
+  // provider = "prisma-client" 是 Prisma 7 的新写法
+  // Prisma 6 是 "prisma-client-js"
+  // 区别：Prisma 7 用纯 JS 实现，不依赖 Rust 二进制文件
+  provider = "prisma-client"
+
+  // output 指定生成的 Client 代码放到哪里
+  // Prisma 7 必须指定，不再默认生成到 node_modules
+  // 路径相对于 schema.prisma 文件所在目录（prisma/）
+  // ../src/generated/prisma 相当于项目根目录的 src/generated/prisma
+  output = "../src/generated/prisma"
+
+  moduleFormat = "esm"
+}
+
+// ══════════════════════════════════════════════════════════
+// 第二部分：datasource（数据库连接配置）
+// ══════════════════════════════════════════════════════════
+// 告诉 Prisma 连接哪个数据库
+
+datasource db {
+  // provider 指定数据库类型
+  // 可选值：postgresql | mysql | sqlite | sqlserver | mongodb
+  provider = "postgresql"
+
+  // Prisma 7 变化：url 移到 prisma.config.ts 里配置
+  // 这里不再写 url = env("DATABASE_URL")
+  // datasource 块只保留 provider 即可
+}
+
+// ══════════════════════════════════════════════════════════
+// 第三部分：model（数据模型定义）
+// ══════════════════════════════════════════════════════════
+// 每个 model 对应数据库里的一张表
+model User {
+  // 字段名   数据类型   修饰符
+  id    Int    @id @default(autoincrement())
+  email String @unique
+  name  String
+  // 手机号固定 11 位数字；用字符串保存，避免整数溢出和前导零丢失
+  phone String? @db.VarChar(11)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt @default(now())
+  deletedAt DateTime?
+  // 一对多的反向字段：一个用户对应多篇文章
+  posts Post[]
+
+  @@map("users")
+}
+
+model Post {
+  id        Int      @id @default(autoincrement())
+  title     String
+  content   String?
+  published Boolean  @default(false)
+  authorId  Int
+  author    User     @relation(fields: [authorId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime?
+  @@map("posts")
+}

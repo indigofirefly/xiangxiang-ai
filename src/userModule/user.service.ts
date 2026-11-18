@@ -1,61 +1,101 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import dayjs from 'dayjs';
-import { MailService } from '../mail/mail.service.js';
+// import { MailService } from '../mail/mail.service.js';
 import { CreateUserDto } from './dto/create-user.dto.js';
 import { UpdateUserDto } from './dto/update-user.dto.js';
+import { PrismaService } from '../prisma/prisma.service.js';
+
+const DELETED_EMAIL_MARK = '#deleted#'
 
 @Injectable()
 export class UserService {
-    constructor(private readonly mailService: MailService) {}
-    getUserInfo() {
-      return [{ name: "xiangxiang", age: 18, gender: "male", timestamp: dayjs().format('YYYY-MM-DD HH:mm:ss'), id: 1 }];
-    }
+  // private readonly mailService: MailService,
+    constructor( private readonly prisma: PrismaService) {}
 
-    addUser(createUserDto: CreateUserDto) {
-      this.mailService.sendWelcomeEmail(createUserDto.email ?? 'unknown@example.com');
-      console.log('createUserDto===>' + JSON.stringify(createUserDto, null, 2));
+    async addUser(createUserDto: CreateUserDto) {
+      // this.mailService.sendWelcomeEmail(createUserDto.email ?? 'unknown@example.com');
+      const user = await this.prisma.user.create({
+        data: {
+          name: createUserDto.name,
+          email: createUserDto.email,
+          phone: createUserDto.phone,
+        }
+      });
       return {
         message: "add user success",
-        data: createUserDto
+        data: user
       };
     }
-    getUserInfoById(id: number) {
+
+    async getUserInfoById(id: number) {
+      const user = await this.prisma.user.findUnique({
+        where: {
+          id: id,
+          deletedAt: null,
+        }
+      });
       return {
         message: "get user info by id success",
-        data: {
-          id: id,
-          name: "xiangxiang",
-          age: 18,
-          gender: "male"
-        }
-      };
+        data: user
+      }
     }
-    getUserList(page: number, pageSize: number) {
-      const currentPage = page || 1;
-      const currentPageSize = pageSize || 20;
+
+    async getUserList(page: number, pageSize: number, name: string) {
+      const userList = await this.prisma.user.findMany({
+        where: {
+          name: {
+            contains: name,
+          },
+          deletedAt: null,
+        },
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+      });
       return {
         message: "get user list success",
-        data: {
-          page: currentPage,
-          pageSize: currentPageSize,
-        }
+        data: userList
       };
     }
-    deleteUser(id: number) {
-      return {
-        message: "delete user success",
-        data: {
+
+    async updateUser(id: number, updateUserDto: UpdateUserDto) {
+      const user = await this.prisma.user.update({
+        where: {
           id: id,
-        }
-      };
-    }
-    updateUser(id: number, updateUserDto: UpdateUserDto) {
+          deletedAt: null,
+        },
+        data: updateUserDto
+      });
       return {
         message: "update user success",
-        data: {
-          id: id,
-          ...updateUserDto
+        data: user
+      };
+    }
+
+    async deleteUser(id: number) {
+      const user = await this.prisma.$transaction(async (tx) => {
+        const existing = await tx.user.findFirst({
+          where: {
+            id,
+            deletedAt: null,
+          },
+        });
+        if (!existing) {
+          throw new NotFoundException('用户不存在或已删除');
         }
+        // 改写邮箱，释放原地址，避免和 email 唯一约束冲突
+        return tx.user.update({
+          where: {
+            id,
+            deletedAt: null,
+          },
+          data: {
+            deletedAt: new Date(),
+            email: `${existing.email}${DELETED_EMAIL_MARK}${existing.id}`,
+          },
+        });
+      });
+      return {
+        message: `${user.name}删除成功`,
       };
     }
 }
