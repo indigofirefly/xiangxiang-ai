@@ -41,19 +41,28 @@ export class UserService {
     }
 
     async getUserList(page: number, pageSize: number, name: string) {
-      const userList = await this.prisma.user.findMany({
-        where: {
-          name: {
-            contains: name,
-          },
-          deletedAt: null,
+      const where = {
+        name: {
+          contains: name,
         },
-        skip: (page - 1) * pageSize,
-        take: pageSize,
-      });
+        deletedAt: null,
+      };
+      const [userList, total] = await Promise.all([
+        this.prisma.user.findMany({
+          where,
+          skip: (page - 1) * pageSize,
+          take: pageSize,
+        }),
+        this.prisma.user.count({ where }),
+      ]);
       return {
         message: "get user list success",
-        data: userList
+        data: {
+          total,
+          page,
+          pageSize,
+          rows: userList,
+        },
       };
     }
 
