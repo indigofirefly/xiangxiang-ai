@@ -10,9 +10,9 @@ services:
     image: postgres:18-alpine
     container_name: nestjs_postgres
     restart: unless-stopped
-    # 直接把 .env.docker 注入容器，镜像会读取 POSTGRES_USER / PASSWORD / DB
+    # 直接把 .env.production 注入容器，镜像会读取 POSTGRES_USER / PASSWORD / DB
     env_file:
-      - .env.docker
+      - .env.production
     # 暴露 5433 端口（避免和本机已安装的 PostgreSQL 5432 端口冲突）
     # 可以用 Navicat / DBeaver 连接 localhost:5433 直接查看数据
     ports:
