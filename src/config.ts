@@ -15,6 +15,6 @@ export const config = {
         
         // 温度：0 = 最保守，1 = 最随机
         // 知识问答用 0.1~0.3，创意写作用 0.7~1.0
-        temperature: 0.3,
+        temperature: 0.1,
     }
 };  

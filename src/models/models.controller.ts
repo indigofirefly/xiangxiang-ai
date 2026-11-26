@@ -5,22 +5,22 @@ import { ModelsService } from './models.service.js';
 export class ModelsController {
     constructor(private readonly modelsService: ModelsService) {}
 
-    @Post('baseChat')
+    @Post('base-chat')
     async baseChat(@Body() body: { message: string }) {
         return this.modelsService.baseChat(body.message);
     }
 
-    @Post('chatWithSystem')
+    @Post('chat-with-system')
     async chatWithSystem(@Body() body: { system: string, message: string }) {
         return this.modelsService.chatWithSystem(body.system, body.message);
     }
 
-    @Post('streamChat')
+    @Post('stream-chat')
     async streamChat(@Body() body: { message: string}, @Res() res: Response) {
         return this.modelsService.streamChat(body.message, res);
     }
 
-    @Post('chatWithParse')
+    @Post('chat-with-parse')
     async chatWithParse(@Body() body: { message: string }) {
         return this.modelsService.chatWithParse(body.message);
     }

@@ -22,6 +22,7 @@ export class ModelsService {
         // invoke 接收消息数组，返回 AIMessage 对象
         // HumanMessage 对应角色 role: "user"
         const response = await this.llm.invoke([new HumanMessage(message)]);
+        console.log(response);
         return {
             question: message,
             answer: response.content,
